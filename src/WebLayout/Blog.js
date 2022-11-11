@@ -1,0 +1,249 @@
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import ReactStars from "react-rating-stars-component";
+import Loading from "../Notfound/Loading";
+import NotFound from "../Notfound/Notfound";
+import Cookies from 'universal-cookie';
+
+import './Blog.css';
+
+const cookies = new Cookies();
+
+const Blog = () => {
+
+  const navigate = useNavigate();
+  const params = useParams();
+  // console.log(params)
+
+  const [blog, setBlog] = useState("");
+  const [comments, setComments] = useState([]);
+  const [comment, setComment] = useState("");
+
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+
+  const token = cookies.get('token')
+
+  const get_singleblog = () => {
+    fetch(`http://localhost:4000/blog/single-blog/${params.id}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }).then((res) => res.json())
+      .then((data) => {
+        console.log(data);
+        if (data.msg === "Unexpected token u in JSON at position 0") {
+          setNotFound(true);
+        }
+        setBlog(data);
+        setLoading(false);
+      });
+  };
+
+  const get_Comments = () => {
+    fetch(`http://localhost:4000/comment/by-blog/${params.id}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    }).then((res) => res.json())
+      .then((data) => {
+        console.log(data);
+        setComments(data);
+        setLoading(false);
+      })
+  }
+
+  const submitRate = (newRate) => {
+
+    if (!token) {
+      window.location.assign(`http://localhost:3000/login`)
+      return alert("You have to login or sign up before submiting a rate!")
+    } 
+
+    fetch('http://localhost:4000/blog/submit-rate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'auth' : `ut ${token}`
+      },
+      body: JSON.stringify({
+        blogId: params.id,
+        score: Number(newRate)
+      })
+    }).then((res) => res.json())
+      .then(data => {
+        console.log(data);
+        get_singleblog()
+        // window.location.assign(`${params.id}`);
+        alert("Your rate submited successfully!");
+        // get_Comments()
+      })
+  }
+
+  const submitComment = () => {
+    
+    if (!token) {
+      window.location.assign(`http://localhost:3000/login`)
+      return alert("You have to login or sign up before submiting a comment!")
+    } 
+
+    fetch('http://localhost:4000/comment/submit', {
+      method: 'POST',
+      headers: {
+        'Content-Type': `application/json`,
+        'auth': `ut ${token}`
+      },
+      body: JSON.stringify({
+        text: comment,
+        blogId: params.id
+      }),
+    }).then((res) => res.json())
+      .then((data) => {
+        console.log(data);
+        if (data.msg === 'bad request: bad inputs') return alert("The field cannot be empty!");
+        if (data.msg === 'ok') {
+          setComment("");
+          // window.location.assign(`${params.id}`);
+          get_Comments()
+          return alert("Your comment submited successfully!");
+        }
+      })
+
+  }
+
+  useEffect(() => {
+
+    get_singleblog();
+    get_Comments();
+
+  }, []);
+
+  if (loading) return <Loading />;
+  if (notFound) return <NotFound />;
+
+  return (
+    <>
+      <section></section>
+        <div className="w-full h-screen relative px-8 ">
+          <div className='absolute top-[calc(50vh-37%)] lg:left-[calc(50vw-35%)] left-[calc(50vw-45%)] flex flex-col
+            w-[90%] lg:w-[70%] mx-auto px-1 py-3 bg-teal-100/40'>
+            <div className="w-full">
+              <button
+                onClick={() => navigate('/blogs')}
+                className="md:p-3 p-2 bg-gradient-to-r from-[#5651e5] to-[#709dff] text-white
+                 rounded-md">
+                Back to All Blogs
+              </button>
+            </div>
+            <div className="m-auto lg:w-[80%] md:w-[90%] w-full relative">
+              <img
+                className="lg:w-[90%] md:w-[90%] w-full m-auto lg:h-96 md:h-72 h-60 object-cover
+                shadow-lg shadow-slate-500 my-8 "
+                src={blog.imgurl}
+                onError={(e) => e.target.src = '/myblog.png'}
+              />
+              <div
+                className="absolute flex justify-center items-center
+                top-[calc(50vh-24%)] left-[15px]
+                md:top-[calc(50vh-10%)] md:left-[37px]
+                lg:top-[calc(60vh-20px)] lg:left-[45px]
+                ">
+                <span>
+                  <ReactStars
+                    count={5}
+                    value={blog.averageScore}
+                    size={25}
+                    edit={false}
+                    activeColor="#ffc200"
+                  />
+                </span>
+                <span className="text-sm ml-1 mt-0.5 text-gray-600">({blog.rateCount})</span>
+              </div>
+            </div>
+            <div className="m-auto lg:w-[80%] md:w-[90%] w-full my-2">
+              <h1 className="lg:w-[90%] md:w-[90%] w-full m-auto my-1 font-bold text-justify break-words px-2 py-2">
+                {blog.title}
+              </h1>
+            </div>
+            <div
+              className="text-justify font-light m-auto lg:w-[80%] md:w-[90%] w-full my-2 px-10"
+              dangerouslySetInnerHTML={{ __html: blog.content }}>
+            </div>
+            <div className="flex items-center gap-5 m-auto lg:w-[80%] md:w-[90%] w-full my-2 px-10">
+              <span className="font-semibold text-xl">Rate This Blog!</span>
+              <ReactStars
+              count={5}
+              value={0}
+              size={25}
+              onChange={submitRate}
+              activeColor="#ffc200"
+              />
+            </div>
+            <div className="m-auto lg:w-[80%] md:w-[90%] w-full my-3 flex flex-col justify-center items-center">
+              <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="  Enter your comment..."
+              rows="5"
+              maxLength={200}
+              className=" bg-gray-300 focus:outline-none inline-block px-1
+               pt-4 rounded-xl lg:w-[90%] md:w-[90%] w-full m-auto my-2"
+              />
+              <button
+                onClick={submitComment}
+                className="md:p-3 p-2 bg-gradient-to-r from-[#5651e5] to-[#709dff] text-white
+                rounded-md w-[40%] my-2">
+                Submit Comment
+              </button>
+            </div>
+            <div className="border-2 border-gray-600"></div>
+            <div className="m-auto lg:w-[80%] md:w-[90%] w-full my-3">
+              <h1 className="text-center">Comments</h1>
+            </div>
+            {comments.length !== 0 ?
+              <>
+                {comments.map(comment => {
+                  return (
+                    <div className="m-auto lg:w-[80%] md:w-[90%] w-full my-3 grid grid-cols-3 shadow-lg shadow-slate-500
+                       bg-gray-300 rounded-md py-2">
+                        <div className="flex justify-start items-center gap-2 col-span-1">
+                          <a href={`/writer/${comment.user._id}`} className="ml-5">
+                            <img
+                              className="md:w-[100px] md:h-[100px] w-[70px] h-[70px] rounded-[50%]
+                              border-[2px] border-blue-300"
+                              src={`http://localhost:4000/${comment.user.avatar}`}
+                              onError={(e) => e.target.src = '/account.png'}
+                            />
+                          </a>
+                          <a href={`/writer/${comment.user._id}`} className='text-center'>
+                            <span>{comment.user.username}</span>
+                          </a>
+                        </div>
+                        <div className="col-span-2 text-justify flex justify-start items-center px-1 border-l-2
+                         border-gray-600">
+                          <p className="font-bold w-full text-justify break-words px-2 py-2">
+                            {comment.text}
+                          </p>
+                        </div>
+                    </div> 
+                  )
+                })}
+              </>
+              :
+              <>
+                <p className="font-semibold text-xl m-auto lg:w-[80%]
+                 md:w-[90%] w-full my-3 text-center py-5 ">
+                  There are no comments for this blog
+                </p>
+              </>
+            }
+          </div>
+        </div>
+      
+    </>
+  );
+};
+
+export default Blog;
