@@ -24,6 +24,36 @@ const Blog = () => {
 
   const token = cookies.get('token')
 
+  // const async_get_singleblog = async () => {
+  //   const res = await fetch(`http://localhost:4000/blog/single-blog/${params.id}`, {
+  //     method: "GET",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //     },
+  //   });
+  //   const data = await res.json()
+
+  //   console.log(data);
+  //   if (data.msg === "Unexpected token u in JSON at position 0") {
+  //     setNotFound(true);
+  //   }
+  //   setBlog(data);
+  //   setLoading(false);
+  // }
+
+  // const async_get_comments = async () => {
+  //   const res = await fetch(`http://localhost:4000/comment/by-blog/${params.id}`, {
+  //     method: "GET",
+  //     headers: {
+  //       "Content-Type": "application/json",
+  //     },
+  //   });
+  //   const data = await res.json();
+  //   console.log(data);
+  //   setComments(data);
+  //   setLoading(false);
+  // }
+
   const get_singleblog = () => {
     fetch(`http://localhost:4000/blog/single-blog/${params.id}`, {
       method: "GET",
@@ -38,6 +68,7 @@ const Blog = () => {
         }
         setBlog(data);
         setLoading(false);
+
       });
   };
 
@@ -117,6 +148,15 @@ const Blog = () => {
 
     get_singleblog();
     get_Comments();
+    
+    // async function abc() {
+    //   await Promise.all([
+    //     async_get_comments(),
+    //     async_get_singleblog()
+    //   ])
+
+    // }
+    // abc();
 
   }, []);
 
